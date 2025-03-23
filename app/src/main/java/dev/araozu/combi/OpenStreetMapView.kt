@@ -1,37 +1,42 @@
-import android.content.Context
-import android.os.Bundle
-import android.util.Log
+package dev.araozu.combi
+
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.osmdroid.config.Configuration
 import org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase
-import org.osmdroid.tileprovider.util.SimpleRegisterReceiver
 import org.osmdroid.util.MapTileIndex
 import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
 import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
+import java.io.File
 
 @Composable
 fun OpenStreetMapView(
     modifier: Modifier = Modifier,
-    onMapViewCreated: (MapView) -> Unit = {}
+    onMapViewCreated: (MapView) -> Unit = {},
+    locationUpdateMinTime: Long = 5000,
+    locationUpdateMinDistance: Float = 0f,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val scope = rememberCoroutineScope()
 
     // Set user agent
     Configuration.getInstance().apply {
         userAgentValue = context.packageName
         tileDownloadThreads = 8
         tileDownloadMaxQueueSize = 128
-        // osmdroidTileCache = File(context.cacheDir, "osmdroid")
+        osmdroidTileCache = File(context.cacheDir, "osmdroid")
         expirationOverrideDuration = 1000L * 60 * 60 * 24 * 7 // Cache for a week
     }
 
@@ -53,7 +58,22 @@ fun OpenStreetMapView(
 
     // Create location overlay
     val myLocationOverlay = remember {
-        val locationProvider = GpsMyLocationProvider(context)
+        val locationProvider = object : GpsMyLocationProvider(context) {
+            init {
+                this.locationUpdateMinTime = locationUpdateMinTime
+                this.locationUpdateMinDistance = locationUpdateMinDistance
+            }
+
+            override fun onLocationChanged(location: android.location.Location) {
+                super.onLocationChanged(location)
+
+                // send to server
+                scope.launch(Dispatchers.IO) {
+                    sendCoordinates(location.latitude, location.longitude)
+                }
+            }
+        }
+
         MyLocationNewOverlay(locationProvider, mapView).apply {
             enableMyLocation()
             enableFollowLocation()

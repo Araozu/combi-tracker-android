@@ -44,6 +44,8 @@ dependencies {
         exclude(group = "com.j256.ormlite", module = "ormlite-core")
     }
 
+    implementation(libs.okhttp)
+    implementation(libs.kotlinx.coroutines.android)
     implementation(libs.osmdroid.android)
     implementation(libs.osmdroid.wms)
     implementation(libs.osmdroid.mapsforge)
