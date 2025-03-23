@@ -1,26 +1,32 @@
 package dev.araozu.combi
 
 import android.util.Log
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.util.concurrent.TimeUnit
 
-fun sendCoordinates(latitude: Double, longitude: Double) {
+private val httpClient by lazy {
+    OkHttpClient.Builder()
+        .connectTimeout(5, TimeUnit.SECONDS)
+        .readTimeout(5, TimeUnit.SECONDS)
+        .build()
+}
+
+suspend fun sendCoordinates(latitude: Double, longitude: Double) {
     Log.d("HTTP", "Sending coordinates: $latitude, $longitude")
+    val time = System.currentTimeMillis()
 
-    val scope = CoroutineScope(Dispatchers.IO)
-    scope.launch {
+    withContext(Dispatchers.IO) {
         try {
-            val url = "http://192.168.1.115:8888/track?lat=$latitude&long=$longitude"
-            val client = OkHttpClient()
+            val url = "http://192.168.1.115:8888/track?lat=$latitude&long=$longitude&time=$time"
             val req = Request.Builder()
                 .url(url)
                 .get()
                 .build()
 
-            client.newCall(req).execute().use { res ->
+            httpClient.newCall(req).execute().use { res ->
                 if (!res.isSuccessful) {
                     Log.e("HTTP", "Failed to send coordinates")
                     Log.e("HTTP", "Response status: ${res.code}")
@@ -31,7 +37,6 @@ fun sendCoordinates(latitude: Double, longitude: Double) {
                     Log.d("HTTP", txt)
                 }
             }
-
         } catch (e: Exception) {
             Log.e("HTTP", "Failed to send coordinates", e)
         }
