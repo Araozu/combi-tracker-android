@@ -15,6 +15,8 @@ import org.osmdroid.tileprovider.tilesource.OnlineTileSourceBase
 import org.osmdroid.tileprovider.util.SimpleRegisterReceiver
 import org.osmdroid.util.MapTileIndex
 import org.osmdroid.views.MapView
+import org.osmdroid.views.overlay.mylocation.GpsMyLocationProvider
+import org.osmdroid.views.overlay.mylocation.MyLocationNewOverlay
 
 @Composable
 fun OpenStreetMapView(
@@ -49,8 +51,20 @@ fun OpenStreetMapView(
         }
     }
 
+    // Create location overlay
+    val myLocationOverlay = remember {
+        val locationProvider = GpsMyLocationProvider(context)
+        MyLocationNewOverlay(locationProvider, mapView).apply {
+            enableMyLocation()
+            enableFollowLocation()
+            setPersonAnchor(0.5f, 0.5f)
+        }
+    }
+
     // Handle lifecycle events
     DisposableEffect(lifecycleOwner) {
+        mapView.overlays.add(myLocationOverlay)
+
         val observer = LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_RESUME -> mapView.onResume()
@@ -63,6 +77,7 @@ fun OpenStreetMapView(
 
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
+            myLocationOverlay.disableMyLocation()
         }
     }
 

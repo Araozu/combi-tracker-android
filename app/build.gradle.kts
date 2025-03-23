@@ -40,9 +40,13 @@ android {
 }
 
 dependencies {
-    implementation("org.osmdroid:osmdroid-android:6.1.17")
-    implementation("org.osmdroid:osmdroid-wms:6.1.17")
-    implementation("org.osmdroid:osmdroid-mapsforge:6.1.17")
+    implementation(libs.osmdroid.geopackage) {
+        exclude(group = "com.j256.ormlite", module = "ormlite-core")
+    }
+
+    implementation(libs.osmdroid.android)
+    implementation(libs.osmdroid.wms)
+    implementation(libs.osmdroid.mapsforge)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
