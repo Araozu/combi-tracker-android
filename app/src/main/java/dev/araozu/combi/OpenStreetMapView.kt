@@ -24,6 +24,7 @@ import java.io.File
 fun OpenStreetMapView(
     modifier: Modifier = Modifier,
     onMapViewCreated: (MapView) -> Unit = {},
+    clientSkew: Long = 0,
     locationUpdateMinTime: Long = 5000,
     locationUpdateMinDistance: Float = 0f,
 ) {
@@ -69,7 +70,7 @@ fun OpenStreetMapView(
 
                 // send to server
                 scope.launch(Dispatchers.IO) {
-                    sendCoordinates(location.latitude, location.longitude)
+                    sendCoordinates(location.latitude, location.longitude, clientSkew)
                 }
             }
         }
